@@ -1,0 +1,504 @@
+{
+  "target": "sagacioussid02/qxplore",
+  "commit": "867ff63",
+  "scanner_version": "0.1.0",
+  "frameworks": [
+    "Anthropic API"
+  ],
+  "files_scanned": 228,
+  "score": 42.4,
+  "grade": "D",
+  "grade_capped": false,
+  "layers": [
+    {
+      "layer": "tools",
+      "title": "Tool boundaries",
+      "score": 50.0
+    },
+    {
+      "layer": "approvals",
+      "title": "Human approval gates",
+      "score": null
+    },
+    {
+      "layer": "audit",
+      "title": "Audit trail and observability",
+      "score": 25.0
+    },
+    {
+      "layer": "secrets",
+      "title": "Secrets and egress",
+      "score": 75.0
+    },
+    {
+      "layer": "budgets",
+      "title": "Budgets and limits",
+      "score": 50.0
+    },
+    {
+      "layer": "untrusted_input",
+      "title": "Untrusted input handling",
+      "score": 40.0
+    },
+    {
+      "layer": "evals",
+      "title": "Evals, testing and rollback",
+      "score": 14.3
+    }
+  ],
+  "checks": [
+    {
+      "id": "TB-01",
+      "layer": "tools",
+      "title": "Tools are an explicit allowlist",
+      "severity": "high",
+      "status": "n/a",
+      "summary": "No tool calling found: a chat-only model app has no actions to limit or gate.",
+      "evidence": []
+    },
+    {
+      "id": "TB-02",
+      "layer": "tools",
+      "title": "Tools carry a risk tier",
+      "severity": "critical",
+      "status": "n/a",
+      "summary": "No tool calling found: a chat-only model app has no actions to limit or gate.",
+      "evidence": []
+    },
+    {
+      "id": "TB-03",
+      "layer": "tools",
+      "title": "Code and shell execution is sandboxed",
+      "severity": "critical",
+      "status": "n/a",
+      "summary": "No command or code execution found in production code.",
+      "evidence": []
+    },
+    {
+      "id": "TB-04",
+      "layer": "tools",
+      "title": "File access is confined to a workspace",
+      "severity": "high",
+      "status": "n/a",
+      "summary": "No file writes or deletes found in production code.",
+      "evidence": []
+    },
+    {
+      "id": "TB-05",
+      "layer": "tools",
+      "title": "Tool supply chain is pinned",
+      "severity": "medium",
+      "status": "partial",
+      "summary": "Locked in places, but 2 of 3 manifests have no lockfile.",
+      "evidence": [
+        {
+          "path": "package.json",
+          "line": 1,
+          "snippet": "no lockfile covers this manifest",
+          "anti_pattern": true
+        },
+        {
+          "path": "backend/package.json",
+          "line": 1,
+          "snippet": "no lockfile covers this manifest",
+          "anti_pattern": true
+        },
+        {
+          "path": "frontend/package.json",
+          "line": 1,
+          "snippet": "locked",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "AG-01",
+      "layer": "approvals",
+      "title": "Side effects wait for human approval",
+      "severity": "critical",
+      "status": "n/a",
+      "summary": "No tool calling found: a chat-only model app has no actions to limit or gate.",
+      "evidence": []
+    },
+    {
+      "id": "AG-02",
+      "layer": "approvals",
+      "title": "Approvals are bound to the exact action",
+      "severity": "high",
+      "status": "n/a",
+      "summary": "No tool calling found: a chat-only model app has no actions to limit or gate.",
+      "evidence": []
+    },
+    {
+      "id": "AG-03",
+      "layer": "approvals",
+      "title": "The gate fails closed",
+      "severity": "critical",
+      "status": "n/a",
+      "summary": "No tool calling found: a chat-only model app has no actions to limit or gate.",
+      "evidence": []
+    },
+    {
+      "id": "AG-04",
+      "layer": "approvals",
+      "title": "Approval decisions are recorded",
+      "severity": "high",
+      "status": "n/a",
+      "summary": "No tool calling found: a chat-only model app has no actions to limit or gate.",
+      "evidence": []
+    },
+    {
+      "id": "AU-01",
+      "layer": "audit",
+      "title": "Every tool call is logged as a structured event",
+      "severity": "high",
+      "status": "partial",
+      "summary": "The app logs, but tool calls are not captured as audit events.",
+      "evidence": [
+        {
+          "path": "backend/main.py",
+          "line": 18,
+          "snippet": "log = logging.getLogger(__name__)",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/agents/base.py",
+          "line": 7,
+          "snippet": "log = logging.getLogger(__name__)",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/core/supabase_auth.py",
+          "line": 8,
+          "snippet": "log = logging.getLogger(__name__)",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/quantum/shor.py",
+          "line": 33,
+          "snippet": "log = logging.getLogger(__name__)",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/routers/agents.py",
+          "line": 28,
+          "snippet": "log = logging.getLogger(__name__)",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "AU-02",
+      "layer": "audit",
+      "title": "Runs are traced end to end",
+      "severity": "medium",
+      "status": "partial",
+      "summary": "Runs carry ids, but no tracing backend is wired in.",
+      "evidence": [
+        {
+          "path": "backend/routers/benchmark.py",
+          "line": 245,
+          "snippet": "run_id = await _save_run(user[\"sub\"], result, settings)",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/routers/benchmark.py",
+          "line": 246,
+          "snippet": "result.id = run_id",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/routers/benchmark.py",
+          "line": 281,
+          "snippet": "@router.get(\"/runs/{run_id}\", response_model=BenchmarkResult)",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/routers/benchmark.py",
+          "line": 282,
+          "snippet": "async def get_run(run_id: str, user: dict = Depends(require_user)):",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/routers/benchmark.py",
+          "line": 290,
+          "snippet": "params={\"id\": f\"eq.{run_id}\", \"user_id\": f\"eq.{user['sub']}\", \"select\": \"*\"},",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "AU-03",
+      "layer": "audit",
+      "title": "The audit trail is durable and tamper-evident",
+      "severity": "medium",
+      "status": "missing",
+      "summary": "No durable audit storage found.",
+      "evidence": []
+    },
+    {
+      "id": "AU-04",
+      "layer": "audit",
+      "title": "Secrets are redacted from logs and traces",
+      "severity": "high",
+      "status": "missing",
+      "summary": "No redaction of secrets in logs or traces found.",
+      "evidence": []
+    },
+    {
+      "id": "SE-01",
+      "layer": "secrets",
+      "title": "No secrets are committed",
+      "severity": "critical",
+      "status": "pass",
+      "summary": "No committed secrets detected.",
+      "evidence": []
+    },
+    {
+      "id": "SE-02",
+      "layer": "secrets",
+      "title": "Secrets come from the environment or a vault",
+      "severity": "high",
+      "status": "pass",
+      "summary": "Secrets are read at runtime and .env is git-ignored.",
+      "evidence": [
+        {
+          "path": "backend/src/index.js",
+          "line": 7,
+          "snippet": "const PORT = process.env.PORT || 3000;",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/src/index.js",
+          "line": 17,
+          "snippet": "windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/src/index.js",
+          "line": 18,
+          "snippet": "max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,",
+          "anti_pattern": false
+        },
+        {
+          "path": ".gitignore",
+          "line": 1,
+          "snippet": ".env ignored",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "SE-03",
+      "layer": "secrets",
+      "title": "Secret scanning runs before merge",
+      "severity": "medium",
+      "status": "pass",
+      "summary": "A secret scanner runs in CI or pre-commit.",
+      "evidence": [
+        {
+          "path": ".gitleaks.toml",
+          "line": 4,
+          "snippet": "title = \"Quantumanic Gitleaks Config\"",
+          "anti_pattern": false
+        },
+        {
+          "path": ".github/workflows/auto-pr.yml",
+          "line": 5,
+          "snippet": "workflows: [\"Secret Scan\"]",
+          "anti_pattern": false
+        },
+        {
+          "path": ".github/workflows/auto-pr.yml",
+          "line": 19,
+          "snippet": "# Only run if the secret scan passed and the run originated from this repo (not a fork)",
+          "anti_pattern": false
+        },
+        {
+          "path": ".github/workflows/auto-pr.yml",
+          "line": 58,
+          "snippet": "\u2026f \"## Summary\\nAuto-generated draft PR from branch \\`%s\\`.\\n\\n**Commit:** \\`%s\\` \u2014 %s\\n\\nPassed secret scan (Gitleaks) before creation.\\n\" \\\u2026",
+          "anti_pattern": false
+        },
+        {
+          "path": ".github/workflows/secret-scan.yml",
+          "line": 1,
+          "snippet": "name: Secret Scan",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "SE-04",
+      "layer": "secrets",
+      "title": "Outbound network access is restricted",
+      "severity": "high",
+      "status": "missing",
+      "summary": "No outbound network restrictions found.",
+      "evidence": []
+    },
+    {
+      "id": "BL-01",
+      "layer": "budgets",
+      "title": "Agent loops have a step cap",
+      "severity": "critical",
+      "status": "n/a",
+      "summary": "No tool calling found: a chat-only model app has no actions to limit or gate.",
+      "evidence": []
+    },
+    {
+      "id": "BL-02",
+      "layer": "budgets",
+      "title": "Spend has a budget",
+      "severity": "high",
+      "status": "partial",
+      "summary": "Spend is tracked or capped per call, but no budget stops a run.",
+      "evidence": [
+        {
+          "path": "backend/agents/base.py",
+          "line": 13,
+          "snippet": "def __init__(self, system_prompt: str, max_tokens: int = 1024, temperature: float = 1.0):",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/agents/base.py",
+          "line": 17,
+          "snippet": "self.max_tokens = max_tokens",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/agents/base.py",
+          "line": 23,
+          "snippet": "max_tokens=self.max_tokens,",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/agents/base.py",
+          "line": 40,
+          "snippet": "max_tokens=self.max_tokens,",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/agents/concept_qa.py",
+          "line": 15,
+          "snippet": "super().__init__(system_prompt=_SYSTEM, max_tokens=1024)",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "BL-03",
+      "layer": "budgets",
+      "title": "Model and tool calls time out",
+      "severity": "high",
+      "status": "partial",
+      "summary": "A timeout is set in one file only.",
+      "evidence": [
+        {
+          "path": "backend/core/supabase_auth.py",
+          "line": 19,
+          "snippet": "async with httpx.AsyncClient(timeout=5.0) as client:",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "UI-01",
+      "layer": "untrusted_input",
+      "title": "Untrusted content is marked as data",
+      "severity": "critical",
+      "status": "missing",
+      "summary": "No handling of untrusted content found.",
+      "evidence": []
+    },
+    {
+      "id": "UI-02",
+      "layer": "untrusted_input",
+      "title": "Model output is parsed into a schema",
+      "severity": "high",
+      "status": "pass",
+      "summary": "Model output is validated against schemas.",
+      "evidence": [
+        {
+          "path": "backend/routers/agents.py",
+          "line": 48,
+          "snippet": "ctx = TutorContext.model_validate_json(unquote(context))",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/routers/agents.py",
+          "line": 59,
+          "snippet": "evt = GameMasterEvent.model_validate_json(unquote(event))",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/routers/agents.py",
+          "line": 75,
+          "snippet": "req = ConceptQARequest.model_validate_json(unquote(payload))",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "UI-03",
+      "layer": "untrusted_input",
+      "title": "Tool arguments are validated",
+      "severity": "high",
+      "status": "n/a",
+      "summary": "No tool calling found: a chat-only model app has no actions to limit or gate.",
+      "evidence": []
+    },
+    {
+      "id": "ER-01",
+      "layer": "evals",
+      "title": "Tests exist and run in CI",
+      "severity": "high",
+      "status": "partial",
+      "summary": "7 test file(s), not run in CI.",
+      "evidence": [
+        {
+          "path": "test_ttt.py",
+          "line": 1,
+          "snippet": "test file",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/tests/__init__.py",
+          "line": 1,
+          "snippet": "test file",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "ER-02",
+      "layer": "evals",
+      "title": "Agent behaviour has evals",
+      "severity": "high",
+      "status": "missing",
+      "summary": "No evals of agent behaviour found.",
+      "evidence": []
+    },
+    {
+      "id": "ER-03",
+      "layer": "evals",
+      "title": "Safety controls have their own tests",
+      "severity": "high",
+      "status": "missing",
+      "summary": "No tests of safety controls found.",
+      "evidence": []
+    },
+    {
+      "id": "ER-04",
+      "layer": "evals",
+      "title": "The agent can be stopped or rolled back",
+      "severity": "medium",
+      "status": "missing",
+      "summary": "No kill switch, dry-run mode or rollback found.",
+      "evidence": []
+    }
+  ],
+  "critical_gaps": [
+    "UI-01"
+  ]
+}

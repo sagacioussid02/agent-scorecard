@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-scorecard"
+version = "0.1.0"
+description = "Score how safely an AI agent codebase is built: tool tiers, approval gates, audit, secrets, budgets, untrusted input, evals."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "Sidd" }]
+keywords = ["ai-agents", "llm", "security", "mcp", "langgraph", "crewai", "claude-agent-sdk", "static-analysis"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Topic :: Security",
+  "Topic :: Software Development :: Quality Assurance",
+  "Environment :: Console",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+
+dependencies = []
+
+[project.urls]
+Homepage = "https://sagacioussid02.github.io/agent-scorecard/"
+Repository = "https://github.com/sagacioussid02/agent-scorecard"
+Issues = "https://github.com/sagacioussid02/agent-scorecard/issues"
+Rubric = "https://github.com/sagacioussid02/agent-scorecard/blob/main/RUBRIC.md"
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.scripts]
+agent-scorecard = "agent_scorecard.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agent_scorecard"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
+norecursedirs = ["tests/fixtures"]

@@ -1,0 +1,621 @@
+{
+  "target": "sagacioussid02/personas",
+  "commit": "81d7636",
+  "scanner_version": "0.1.0",
+  "frameworks": [
+    "OpenAI API",
+    "AWS Bedrock"
+  ],
+  "files_scanned": 158,
+  "score": 37.4,
+  "grade": "F",
+  "grade_capped": false,
+  "layers": [
+    {
+      "layer": "tools",
+      "title": "Tool boundaries",
+      "score": 18.8
+    },
+    {
+      "layer": "approvals",
+      "title": "Human approval gates",
+      "score": 25.0
+    },
+    {
+      "layer": "audit",
+      "title": "Audit trail and observability",
+      "score": 50.0
+    },
+    {
+      "layer": "secrets",
+      "title": "Secrets and egress",
+      "score": 75.0
+    },
+    {
+      "layer": "budgets",
+      "title": "Budgets and limits",
+      "score": 28.6
+    },
+    {
+      "layer": "untrusted_input",
+      "title": "Untrusted input handling",
+      "score": 42.9
+    },
+    {
+      "layer": "evals",
+      "title": "Evals, testing and rollback",
+      "score": 21.4
+    }
+  ],
+  "checks": [
+    {
+      "id": "TB-01",
+      "layer": "tools",
+      "title": "Tools are an explicit allowlist",
+      "severity": "high",
+      "status": "missing",
+      "summary": "No tool declarations or allowlists found.",
+      "evidence": []
+    },
+    {
+      "id": "TB-02",
+      "layer": "tools",
+      "title": "Tools carry a risk tier",
+      "severity": "critical",
+      "status": "missing",
+      "summary": "No risk classification of tools found.",
+      "evidence": []
+    },
+    {
+      "id": "TB-03",
+      "layer": "tools",
+      "title": "Code and shell execution is sandboxed",
+      "severity": "critical",
+      "status": "n/a",
+      "summary": "No command or code execution found in production code.",
+      "evidence": []
+    },
+    {
+      "id": "TB-04",
+      "layer": "tools",
+      "title": "File access is confined to a workspace",
+      "severity": "high",
+      "status": "partial",
+      "summary": "Paths are normalised, but no check keeps them inside a workspace.",
+      "evidence": [
+        {
+          "path": "backend/server.py",
+          "line": 913,
+          "snippet": "path = os.path.realpath(os.path.join(TWINS_DIR, f\"{twin_id}.json\"))",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 914,
+          "snippet": "if not path.startswith(os.path.realpath(TWINS_DIR) + os.sep):",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 1090,
+          "snippet": "sessions_dir = os.path.realpath(os.path.join(MEMORY_DIR, \"sessions\"))",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 1091,
+          "snippet": "file_path = os.path.realpath(os.path.join(sessions_dir, f\"{session_id}.json\"))",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 1098,
+          "snippet": "memory_dir_real = os.path.realpath(MEMORY_DIR)",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "TB-05",
+      "layer": "tools",
+      "title": "Tool supply chain is pinned",
+      "severity": "medium",
+      "status": "partial",
+      "summary": "Locked in places, but 1 of 4 manifests have no lockfile.",
+      "evidence": [
+        {
+          "path": "pyproject.toml",
+          "line": 1,
+          "snippet": "no lockfile covers this manifest",
+          "anti_pattern": true
+        },
+        {
+          "path": "backend/pyproject.toml",
+          "line": 1,
+          "snippet": "locked",
+          "anti_pattern": false
+        },
+        {
+          "path": "package.json",
+          "line": 1,
+          "snippet": "locked",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "AG-01",
+      "layer": "approvals",
+      "title": "Side effects wait for human approval",
+      "severity": "critical",
+      "status": "partial",
+      "summary": "Approval or confirmation calls exist, but no blocking gate was identified.",
+      "evidence": [
+        {
+          "path": "backend/context.py",
+          "line": 106,
+          "snippet": "\u2026message is appended after your reply to confirm (or not) whether that actually happened \u2014 if you also make that claim, it duplicates or cont\u2026",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 1880,
+          "snippet": "async def approve_public_persona(twin_id: str, _admin_email: str = Depends(get_current_admin_email)):",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "AG-02",
+      "layer": "approvals",
+      "title": "Approvals are bound to the exact action",
+      "severity": "high",
+      "status": "missing",
+      "summary": "Approvals are not tied to a hash or expiry of the approved action.",
+      "evidence": []
+    },
+    {
+      "id": "AG-03",
+      "layer": "approvals",
+      "title": "The gate fails closed",
+      "severity": "critical",
+      "status": "missing",
+      "summary": "No gate, so nothing fails closed.",
+      "evidence": []
+    },
+    {
+      "id": "AG-04",
+      "layer": "approvals",
+      "title": "Approval decisions are recorded",
+      "severity": "high",
+      "status": "partial",
+      "summary": "Decision times are stored, but not who decided.",
+      "evidence": [
+        {
+          "path": "backend/server.py",
+          "line": 1894,
+          "snippet": "_small_object_put(FEATURED_S3_PREFIX, FEATURED_DIR, f\"{twin_id}.json\", {\"twin_id\": twin_id, \"approved_at\": datetime.now().isoformat()})",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "AU-01",
+      "layer": "audit",
+      "title": "Every tool call is logged as a structured event",
+      "severity": "high",
+      "status": "partial",
+      "summary": "The app logs, but tool calls are not captured as audit events.",
+      "evidence": [
+        {
+          "path": "backend/personality_agent.py",
+          "line": 12,
+          "snippet": "logger = logging.getLogger(__name__)",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "AU-02",
+      "layer": "audit",
+      "title": "Runs are traced end to end",
+      "severity": "medium",
+      "status": "missing",
+      "summary": "No tracing found.",
+      "evidence": []
+    },
+    {
+      "id": "AU-03",
+      "layer": "audit",
+      "title": "The audit trail is durable and tamper-evident",
+      "severity": "medium",
+      "status": "missing",
+      "summary": "No durable audit storage found.",
+      "evidence": []
+    },
+    {
+      "id": "AU-04",
+      "layer": "audit",
+      "title": "Secrets are redacted from logs and traces",
+      "severity": "high",
+      "status": "pass",
+      "summary": "Redaction found in 1 file(s).",
+      "evidence": [
+        {
+          "path": "backend/context.py",
+          "line": 22,
+          "snippet": "def _redact_pii(text: str) -> str:",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/context.py",
+          "line": 24,
+          "snippet": "text = _EMAIL_RE.sub('[email redacted]', text)",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/context.py",
+          "line": 25,
+          "snippet": "text = _PHONE_RE.sub('[phone redacted]', text)",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/context.py",
+          "line": 293,
+          "snippet": "sections.append(f\"**LinkedIn Profile:**\\n{_redact_pii(linkedin)}\")",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "SE-01",
+      "layer": "secrets",
+      "title": "No secrets are committed",
+      "severity": "critical",
+      "status": "pass",
+      "summary": "No committed secrets detected.",
+      "evidence": []
+    },
+    {
+      "id": "SE-02",
+      "layer": "secrets",
+      "title": "Secrets come from the environment or a vault",
+      "severity": "high",
+      "status": "pass",
+      "summary": "Secrets are read at runtime and .env is git-ignored.",
+      "evidence": [
+        {
+          "path": "backend/server.py",
+          "line": 66,
+          "snippet": "origins = os.getenv(\"CORS_ORIGINS\", \"http://localhost:3000\").split(\",\")",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 78,
+          "snippet": "region_name=os.getenv(\"DEFAULT_AWS_REGION\", \"us-east-1\")",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 82,
+          "snippet": "BEDROCK_MODEL_ID = os.getenv(\"BEDROCK_MODEL_ID\", \"global.amazon.nova-2-lite-v1:0\")",
+          "anti_pattern": false
+        },
+        {
+          "path": ".gitignore",
+          "line": 1,
+          "snippet": ".env ignored",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "SE-03",
+      "layer": "secrets",
+      "title": "Secret scanning runs before merge",
+      "severity": "medium",
+      "status": "pass",
+      "summary": "A secret scanner runs in CI or pre-commit.",
+      "evidence": [
+        {
+          "path": ".github/workflows/secrets-scan.yml",
+          "line": 12,
+          "snippet": "gitleaks:",
+          "anti_pattern": false
+        },
+        {
+          "path": ".github/workflows/secrets-scan.yml",
+          "line": 13,
+          "snippet": "name: Gitleaks \u2014 detect exposed secrets",
+          "anti_pattern": false
+        },
+        {
+          "path": ".github/workflows/secrets-scan.yml",
+          "line": 18,
+          "snippet": "fetch-depth: 0  # full history required for Gitleaks PR range scan",
+          "anti_pattern": false
+        },
+        {
+          "path": ".github/workflows/secrets-scan.yml",
+          "line": 20,
+          "snippet": "- name: Run Gitleaks",
+          "anti_pattern": false
+        },
+        {
+          "path": ".github/workflows/secrets-scan.yml",
+          "line": 21,
+          "snippet": "uses: gitleaks/gitleaks-action@v2",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "SE-04",
+      "layer": "secrets",
+      "title": "Outbound network access is restricted",
+      "severity": "high",
+      "status": "missing",
+      "summary": "No outbound network restrictions found.",
+      "evidence": []
+    },
+    {
+      "id": "BL-01",
+      "layer": "budgets",
+      "title": "Agent loops have a step cap",
+      "severity": "critical",
+      "status": "missing",
+      "summary": "No limit on agent steps or iterations found.",
+      "evidence": []
+    },
+    {
+      "id": "BL-02",
+      "layer": "budgets",
+      "title": "Spend has a budget",
+      "severity": "high",
+      "status": "partial",
+      "summary": "Spend is tracked or capped per call, but no budget stops a run.",
+      "evidence": [
+        {
+          "path": "backend/personality_agent.py",
+          "line": 104,
+          "snippet": "\"maxTokens\": 1000,",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 392,
+          "snippet": "inferenceConfig={\"maxTokens\": 120, \"temperature\": 0},",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 479,
+          "snippet": "inferenceConfig={\"maxTokens\": 40, \"temperature\": 0},",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 1512,
+          "snippet": "\"maxTokens\": 500,",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 1594,
+          "snippet": "inferenceConfig={\"maxTokens\": 1500, \"temperature\": 0.2},",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "BL-03",
+      "layer": "budgets",
+      "title": "Model and tool calls time out",
+      "severity": "high",
+      "status": "partial",
+      "summary": "A timeout is set in one file only.",
+      "evidence": [
+        {
+          "path": "backend/server.py",
+          "line": 598,
+          "snippet": "timeout=8.0,",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 672,
+          "snippet": "async with httpx.AsyncClient(timeout=5.0) as client:",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 1864,
+          "snippet": "timeout=5.0,",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 596,
+          "snippet": "await asyncio.wait_for(",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 1850,
+          "snippet": "await asyncio.wait_for(",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "UI-01",
+      "layer": "untrusted_input",
+      "title": "Untrusted content is marked as data",
+      "severity": "critical",
+      "status": "missing",
+      "summary": "No handling of untrusted content found.",
+      "evidence": []
+    },
+    {
+      "id": "UI-02",
+      "layer": "untrusted_input",
+      "title": "Model output is parsed into a schema",
+      "severity": "high",
+      "status": "partial",
+      "summary": "Output is parsed as JSON, without schema validation.",
+      "evidence": [
+        {
+          "path": "backend/server.py",
+          "line": 626,
+          "snippet": "data = json.loads(f.read_text())",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 849,
+          "snippet": "candidate = json.loads(text[start:end + 1])",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 881,
+          "snippet": "return json.loads(text[start:i + 1])",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 889,
+          "snippet": "return json.loads(response[\"Body\"].read().decode(\"utf-8\"))",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 1076,
+          "snippet": "return json.loads(response[\"Body\"].read().decode(\"utf-8\"))",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "UI-03",
+      "layer": "untrusted_input",
+      "title": "Tool arguments are validated",
+      "severity": "high",
+      "status": "pass",
+      "summary": "Tool inputs are validated.",
+      "evidence": [
+        {
+          "path": "backend/server.py",
+          "line": 2945,
+          "snippet": "validated = OnboardResponse.model_validate(data)",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 4323,
+          "snippet": "validated = ResumeResponse.model_validate(data)",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 2324,
+          "snippet": "question: str = Field(..., min_length=1, max_length=500)",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 2325,
+          "snippet": "wrong_response: str = Field(..., min_length=1, max_length=500)",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 2326,
+          "snippet": "correction: str = Field(..., min_length=1, max_length=500)",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "ER-01",
+      "layer": "evals",
+      "title": "Tests exist and run in CI",
+      "severity": "high",
+      "status": "partial",
+      "summary": "1 test file(s), not run in CI.",
+      "evidence": [
+        {
+          "path": "__tests__/package-json.test.js",
+          "line": 1,
+          "snippet": "test file",
+          "anti_pattern": false
+        }
+      ]
+    },
+    {
+      "id": "ER-02",
+      "layer": "evals",
+      "title": "Agent behaviour has evals",
+      "severity": "high",
+      "status": "missing",
+      "summary": "No evals of agent behaviour found.",
+      "evidence": []
+    },
+    {
+      "id": "ER-03",
+      "layer": "evals",
+      "title": "Safety controls have their own tests",
+      "severity": "high",
+      "status": "missing",
+      "summary": "No tests of safety controls found.",
+      "evidence": []
+    },
+    {
+      "id": "ER-04",
+      "layer": "evals",
+      "title": "The agent can be stopped or rolled back",
+      "severity": "medium",
+      "status": "partial",
+      "summary": "State can be rolled back, but there is no switch to stop the agent.",
+      "evidence": [
+        {
+          "path": "backend/server.py",
+          "line": 3505,
+          "snippet": "_append_model_version(twin_data, current_model, trigger=\"pre-rollback\")",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 3508,
+          "snippet": "_append_model_version(twin_data, restored, trigger=f\"rollback_to_v{version}\")",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 3880,
+          "snippet": "@app.patch(\"/twin/{twin_id}/personality/rollback\")",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/server.py",
+          "line": 3881,
+          "snippet": "async def rollback_personality_model(",
+          "anti_pattern": false
+        },
+        {
+          "path": "backend/personalities/archetypes.json",
+          "line": 27,
+          "snippet": "\"Observability, rollback plans, and owned complexity\",",
+          "anti_pattern": false
+        }
+      ]
+    }
+  ],
+  "critical_gaps": [
+    "TB-02",
+    "AG-03",
+    "BL-01",
+    "UI-01"
+  ]
+}

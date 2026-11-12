@@ -1,0 +1,2 @@
+{"mcpServers": {"github": {"command": "docker", "args": ["run", "-i", "--rm", "ghcr.io/github/github-mcp-server@sha256:0000000000000000000000000000000000000000000000000000000000000000"]},
+                "fetch": {"command": "uvx", "args": ["mcp-server-fetch==2025.4.7"]}}}

@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Safety Scorecard</title>
+<meta name="description" content="Open-source scanner that scores how safely an AI agent codebase is built: 27 checks across seven layers, with file and line evidence. Plus a fixed-price review.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,600;112,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an inspection report. Wide hero with a live scorecard, then a ruled ledger of layers, real results, and a two-column offer. */
+:root {
+  --paper: #f3f5f6;
+  --sheet: #ffffff;
+  --ink: #16202b;
+  --ink-2: #4a5866;
+  --rule: #d5dce1;
+  --signal: #e2591b;      /* hazard orange: the one accent */
+  --signal-soft: #fbe3d6;
+  --pass: #2f7d5b;
+  --partial: #b7861a;
+  --missing: #c23b2f;
+  --bar-bg: #e4e9ec;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --s-1: 0.8125rem; --s0: 1rem; --s1: 1.25rem; --s2: 1.75rem; --s3: 2.5rem; --s4: clamp(2.4rem, 5.4vw, 4.1rem);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #0f151b; --sheet: #161e26; --ink: #e6ebef; --ink-2: #9aa8b4; --rule: #2a3540;
+    --signal: #ff7a3d; --signal-soft: #3a2116; --pass: #5cc195; --partial: #e3b44a; --missing: #f0675a; --bar-bg: #24303a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #0f151b; --sheet: #161e26; --ink: #e6ebef; --ink-2: #9aa8b4; --rule: #2a3540;
+  --signal: #ff7a3d; --signal-soft: #3a2116; --pass: #5cc195; --partial: #e3b44a; --missing: #f0675a; --bar-bg: #24303a;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink);
+  font: 400 var(--s0)/1.6 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1120px; margin: 0 auto; }
+a { color: inherit; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
+h1, h2, h3 { font-family: var(--display); font-stretch: 112%; font-weight: 800; letter-spacing: -0.01em; text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.eyebrow { font: 500 var(--s-1)/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+code, .mono { font-family: var(--mono); font-size: 0.92em; }
+
+/* Masthead */
+.mast { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-block: 22px; border-bottom: 1px solid var(--rule); flex-wrap: wrap; }
+.brand { font: 600 var(--s0)/1 var(--mono); display: flex; align-items: center; gap: 10px; }
+.brand i { width: 14px; height: 14px; background: repeating-linear-gradient(-45deg, var(--signal) 0 4px, var(--ink) 4px 8px); display: inline-block; }
+.mast nav { display: flex; gap: 22px; font-size: var(--s-1); flex-wrap: wrap; }
+.mast nav a { text-decoration: none; color: var(--ink-2); }
+.mast nav a:hover { color: var(--ink); }
+
+/* Hero */
+.hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; padding-block: 64px 72px; align-items: start; }
+.hero h1 { font-size: var(--s4); line-height: 1.02; }
+.hero h1 em { font-style: normal; color: var(--signal); }
+.lede { margin-top: 22px; font-size: var(--s1); line-height: 1.5; color: var(--ink-2); max-width: 34ch; }
+.install { margin-top: 30px; background: var(--ink); color: var(--paper); font: 400 0.9rem/1.5 var(--mono); padding: 14px 16px; border-radius: 4px; overflow-x: auto; white-space: nowrap; }
+.install span { color: var(--signal); user-select: none; }
+.ctas { display: flex; gap: 12px; margin-top: 22px; flex-wrap: wrap; }
+.btn { display: inline-block; padding: 12px 18px; font: 600 0.95rem/1 var(--body); text-decoration: none; border: 1.5px solid var(--ink); border-radius: 3px; }
+.btn.primary { background: var(--signal); border-color: var(--signal); color: #fff; }
+.btn:hover { transform: translateY(-1px); }
+.facts { display: flex; gap: 22px; margin-top: 28px; flex-wrap: wrap; font-size: var(--s-1); color: var(--ink-2); }
+.facts b { color: var(--ink); font-weight: 600; }
+
+/* Scorecard sample */
+.card { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; box-shadow: 0 18px 40px -24px rgba(22, 32, 43, 0.35); overflow: hidden; }
+.card-head { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--rule); font: 400 var(--s-1)/1 var(--mono); color: var(--ink-2); gap: 12px; }
+.score { display: grid; grid-template-columns: auto 1fr; gap: 18px; align-items: center; padding: 20px 18px 8px; }
+.score .num { font: 800 3.4rem/1 var(--display); font-stretch: 112%; font-variant-numeric: tabular-nums; }
+.score .num small { font-size: 1rem; color: var(--ink-2); font-weight: 600; }
+.grade { display: inline-flex; align-items: center; gap: 8px; font: 600 var(--s-1)/1.3 var(--body); }
+.grade b { font: 800 1.4rem/1 var(--display); width: 38px; height: 38px; display: grid; place-items: center; border: 2px solid var(--partial); color: var(--partial); border-radius: 50%; }
+.cap { display: block; color: var(--ink-2); font-weight: 400; }
+.layers { list-style: none; margin: 0; padding: 8px 18px 16px; }
+.layers li { display: grid; grid-template-columns: 1.5rem 1fr 2.4rem 34%; gap: 10px; align-items: center; padding-block: 7px; border-bottom: 1px dashed var(--rule); font-size: 0.9rem; }
+.layers li:last-child { border-bottom: 0; }
+.layers .n { font: 400 var(--s-1)/1 var(--mono); color: var(--ink-2); }
+.layers .v { font: 500 0.9rem/1 var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+.bar { height: 8px; background: var(--bar-bg); border-radius: 1px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--ink); width: var(--w); transform-origin: left; }
+.bar i.lo { background: var(--signal); }
+@media (prefers-reduced-motion: no-preference) {
+  .bar i { animation: grow 900ms cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--d) * 70ms + 200ms); }
+  @keyframes grow { from { transform: scaleX(0.02); } to { transform: scaleX(1); } }
+}
+.gap { margin: 0 18px 18px; padding: 12px 14px; background: var(--signal-soft); border-left: 3px solid var(--signal); font-size: 0.88rem; line-height: 1.5; }
+.gap code { font-weight: 500; }
+
+/* Sections */
+section.block { padding-block: 72px; border-top: 1px solid var(--rule); }
+.sec-head { display: grid; grid-template-columns: 1fr 1.6fr; gap: 40px; margin-bottom: 40px; align-items: end; }
+.sec-head h2 { font-size: var(--s3); line-height: 1.05; margin-top: 10px; }
+.sec-head p { color: var(--ink-2); max-width: 60ch; }
+
+/* Layers ledger */
+.ledger { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0; border-top: 2px solid var(--ink); }
+.ledger article { padding: 22px 22px 24px 0; border-bottom: 1px solid var(--rule); }
+.ledger h3 { font-size: var(--s1); display: flex; gap: 12px; align-items: baseline; }
+.ledger h3 span { font: 500 var(--s-1)/1 var(--mono); color: var(--signal); }
+.ledger p { margin-top: 8px; color: var(--ink-2); font-size: 0.95rem; }
+.ids { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; }
+.ids code { font-size: 0.75rem; padding: 3px 6px; border: 1px solid var(--rule); border-radius: 2px; color: var(--ink-2); }
+.ids code.crit { border-color: var(--signal); color: var(--signal); }
+.legend-note { margin-top: 18px; font-size: var(--s-1); color: var(--ink-2); }
+.legend-note code { color: var(--signal); }
+
+/* Results table */
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet); }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 0.9rem; }
+th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--rule); }
+th { font: 500 0.72rem/1.2 var(--mono); text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-2); }
+tbody tr:last-child td { border-bottom: 0; }
+td.repo { font: 500 0.88rem/1.3 var(--mono); }
+td.repo small { display: block; color: var(--ink-2); font-weight: 400; font-family: var(--body); }
+td.s { font: 800 1.15rem/1 var(--display); font-variant-numeric: tabular-nums; }
+td.g { font: 600 0.9rem/1 var(--mono); }
+td.cell { text-align: center; font: 500 0.8rem/1 var(--mono); font-variant-numeric: tabular-nums; }
+td.cell span { display: inline-block; min-width: 2.6em; padding: 5px 0; border-radius: 2px; }
+.h4 { background: color-mix(in srgb, var(--pass) 28%, transparent); }
+.h3 { background: color-mix(in srgb, var(--pass) 14%, transparent); }
+.h2 { background: color-mix(in srgb, var(--partial) 22%, transparent); }
+.h1 { background: color-mix(in srgb, var(--missing) 22%, transparent); }
+.h0 { background: color-mix(in srgb, var(--missing) 38%, transparent); }
+.na { color: var(--ink-2); }
+td.crit { font: 400 0.78rem/1.4 var(--mono); color: var(--signal); }
+.table-note { margin-top: 14px; font-size: var(--s-1); color: var(--ink-2); max-width: 80ch; }
+
+/* Scoring */
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 28px; }
+.rules div { border-top: 2px solid var(--ink); padding-top: 14px; }
+.rules h3 { font-size: var(--s0); }
+.rules p { margin-top: 8px; color: var(--ink-2); font-size: 0.95rem; }
+
+/* Offer */
+.tiers { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.tier { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; padding: 28px; display: flex; flex-direction: column; gap: 16px; }
+.tier.full { border: 2px solid var(--ink); }
+.tier h3 { font-size: var(--s1); }
+.price { font: 800 var(--s3)/1 var(--display); font-stretch: 112%; font-variant-numeric: tabular-nums; }
+.price small { font: 400 var(--s-1)/1 var(--body); color: var(--ink-2); margin-left: 6px; }
+.tier ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 9px; font-size: 0.95rem; }
+.tier li { padding-left: 22px; position: relative; }
+.tier li::before { content: ""; position: absolute; left: 0; top: 0.55em; width: 10px; height: 2px; background: var(--signal); }
+.tier .meta { margin-top: auto; font-size: var(--s-1); color: var(--ink-2); border-top: 1px solid var(--rule); padding-top: 14px; }
+.terms { margin-top: 26px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; font-size: 0.92rem; color: var(--ink-2); }
+.terms b { color: var(--ink); display: block; margin-bottom: 4px; }
+.book { margin-top: 36px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; padding: 24px; background: var(--ink); color: var(--paper); border-radius: 6px; }
+.book p { flex: 1 1 320px; }
+.book .btn { border-color: var(--signal); }
+
+footer { padding-block: 36px 48px; border-top: 1px solid var(--rule); font-size: var(--s-1); color: var(--ink-2); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+
+@media (max-width: 860px) {
+  .hero, .sec-head, .tiers { grid-template-columns: 1fr; }
+  .hero { gap: 40px; padding-block: 40px 56px; }
+  section.block { padding-block: 56px; }
+}
+@media (max-width: 420px) {
+  .layers li { grid-template-columns: 1.2rem 1fr 2.2rem 28%; gap: 8px; font-size: 0.84rem; }
+  .tier { padding: 22px; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="mast">
+    <div class="brand"><i aria-hidden="true"></i>agent-scorecard</div>
+    <nav aria-label="Sections">
+      <a href="#layers">What it checks</a>
+      <a href="#results">Seven repos</a>
+      <a href="#scoring">Scoring</a>
+      <a href="#review">Review</a>
+      <a href="https://github.com/sagacioussid02/agent-scorecard">GitHub</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div>
+      <p class="eyebrow">Open-source scanner · CLI and MCP server</p>
+      <h1 style="margin-top:14px">How safely is your <em>agent</em> built?</h1>
+      <p class="lede">Point it at an agent codebase and get a 0 to 100 score across the seven layers that keep agents out of trouble, with file and line evidence for every finding and the fix for every gap.</p>
+      <div class="install" role="group" aria-label="Install and run"><span>$ </span>pipx install agent-scorecard &amp;&amp; agent-scorecard scan ./my-agent</div>
+      <div class="ctas">
+        <a class="btn primary" href="#review">Book a review</a>
+        <a class="btn" href="https://github.com/sagacioussid02/agent-scorecard">View on GitHub</a>
+      </div>
+      <div class="facts">
+        <span><b>Read-only.</b> Never runs your code</span>
+        <span><b>Zero</b> runtime dependencies</span>
+        <span><b>Python, TS, Go</b></span>
+      </div>
+    </div>
+
+    <figure class="card" aria-label="Example scorecard" style="margin:0">
+      <div class="card-head"><span>$ agent-scorecard scan ./my-agent</span><span>example</span></div>
+      <div class="score">
+        <div class="num">77<small>/100</small></div>
+        <div class="grade"><b>C</b><span>Grade C<span class="cap">capped by a missing critical control</span></span></div>
+      </div>
+      <ol class="layers">
+        <li><span class="n">1</span>Tool boundaries<span class="v">54</span><span class="bar"><i class="lo" style="--w:54%;--d:0"></i></span></li>
+        <li><span class="n">2</span>Human approval gates<span class="v">100</span><span class="bar"><i style="--w:100%;--d:1"></i></span></li>
+        <li><span class="n">3</span>Audit trail<span class="v">92</span><span class="bar"><i style="--w:92%;--d:2"></i></span></li>
+        <li><span class="n">4</span>Secrets and egress<span class="v">62</span><span class="bar"><i class="lo" style="--w:62%;--d:3"></i></span></li>
+        <li><span class="n">5</span>Budgets and limits<span class="v">100</span><span class="bar"><i style="--w:100%;--d:4"></i></span></li>
+        <li><span class="n">6</span>Untrusted input<span class="v">57</span><span class="bar"><i class="lo" style="--w:57%;--d:5"></i></span></li>
+        <li><span class="n">7</span>Evals and rollback<span class="v">71</span><span class="bar"><i style="--w:71%;--d:6"></i></span></li>
+      </ol>
+      <div class="gap"><code>UI-01</code> Untrusted content is marked as data. MISSING: web pages and tool results reach the model with nothing telling it they are data, not instructions. <span class="mono">agent/prompts.py:41</span></div>
+    </figure>
+  </section>
+
+  <section class="block" id="layers">
+    <div class="sec-head">
+      <div><p class="eyebrow">The rubric</p><h2>27 checks across seven layers</h2></div>
+      <p>Each check says why it matters, what the scanner looks for, what earns full and partial credit, and how to fix it. Checks that can't apply, like sandboxing in an agent that never runs commands, are left out of the score instead of counted against you.</p>
+    </div>
+    <div class="ledger">
+      <article><h3><span>L1</span>Tool boundaries</h3><p>Tools are allowlisted, tiered by risk, sandboxed when they execute, confined to a workspace, and pinned.</p><div class="ids"><code>TB-01</code><code class="crit">TB-02</code><code class="crit">TB-03</code><code>TB-04</code><code>TB-05</code></div></article>
+      <article><h3><span>L2</span>Human approval gates</h3><p>Risky actions wait for a person, the approval is bound to that exact action, and anything unexpected fails closed.</p><div class="ids"><code class="crit">AG-01</code><code>AG-02</code><code class="crit">AG-03</code><code>AG-04</code></div></article>
+      <article><h3><span>L3</span>Audit trail</h3><p>Every tool call is a structured event, traced end to end, stored where it can't be quietly edited, with secrets redacted.</p><div class="ids"><code>AU-01</code><code>AU-02</code><code>AU-03</code><code>AU-04</code></div></article>
+      <article><h3><span>L4</span>Secrets and egress</h3><p>No keys in the repo, secrets loaded at runtime, scanning in CI, and outbound calls limited to known hosts.</p><div class="ids"><code class="crit">SE-01</code><code>SE-02</code><code>SE-03</code><code>SE-04</code></div></article>
+      <article><h3><span>L5</span>Budgets and limits</h3><p>Hard caps on steps, spend and time, so a loop or a bad prompt can't run all night on your card.</p><div class="ids"><code class="crit">BL-01</code><code>BL-02</code><code>BL-03</code></div></article>
+      <article><h3><span>L6</span>Untrusted input</h3><p>Fetched content is labelled as data, model output is schema-validated, and tool arguments are checked before use.</p><div class="ids"><code class="crit">UI-01</code><code>UI-02</code><code>UI-03</code></div></article>
+      <article><h3><span>L7</span>Evals and rollback</h3><p>Tests run in CI, behaviour evals and safety tests exist, and there is a kill switch or dry-run mode.</p><div class="ids"><code>ER-01</code><code>ER-02</code><code>ER-03</code><code>ER-04</code></div></article>
+    </div>
+    <p class="legend-note"><code>Orange IDs</code> are critical controls. Missing any one caps the grade at C, whatever the rest looks like.</p>
+  </section>
+
+  <section class="block" id="results">
+    <div class="sec-head">
+      <div><p class="eyebrow">Field test</p><h2>Seven agent repos, scored</h2></div>
+      <p>Three popular open-source agents and four of my own, each pinned to a commit so anyone can reproduce the result. The best-known project did not score the highest, and my own ranged from an A to an F.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Repository</th><th>Score</th><th>Grade</th><th title="Tool boundaries">L1</th><th title="Approval gates">L2</th><th title="Audit trail">L3</th><th title="Secrets">L4</th><th title="Budgets">L5</th><th title="Untrusted input">L6</th><th title="Evals">L7</th><th>Critical gaps</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <p class="table-note">Scored on 9 November 2026 with agent-scorecard 0.1.0. A grade with * is capped at C by a missing critical control; a dash means the layer doesn't apply because the app never calls tools. These are static signals, not a penetration test.</p>
+  </section>
+
+  <section class="block" id="scoring">
+    <div class="sec-head">
+      <div><p class="eyebrow">Scoring</p><h2>Built so one strong layer can't hide a missing one</h2></div>
+      <p>The number is a summary. The useful output is the list of gaps, each tied to the line of code it came from.</p>
+    </div>
+    <div class="rules">
+      <div><h3>PASS 2 · PARTIAL 1 · MISSING 0</h3><p>Weighted by severity: critical ×3, high ×2, medium ×1. Not-applicable checks drop out.</p></div>
+      <div><h3>Layers average evenly</h3><p>A perfect audit trail doesn't make up for having no approval gate, so each layer counts the same.</p></div>
+      <div><h3>Critical gaps cap the grade</h3><p>A 90 with no step cap is still a C. Grades run A at 85 and up to F under 40.</p></div>
+      <div><h3>Comments don't count</h3><p>"We fail closed" in a docstring is not a control. Tests, examples and dev tooling are kept out of production signals.</p></div>
+    </div>
+  </section>
+
+  <section class="block" id="review">
+    <div class="sec-head">
+      <div><p class="eyebrow">Agent Safety Review</p><h2>The scanner finds signals. The review checks they hold.</h2></div>
+      <p>A fixed-price review by a senior engineer who builds production agents, delivered in five business days. For teams heading into a launch, an enterprise deal or a security questionnaire.</p>
+    </div>
+    <div class="tiers">
+      <div class="tier">
+        <h3>Scorecard Review</h3>
+        <div class="price">$1,500<small>fixed</small></div>
+        <ul>
+          <li>Annotated scorecard, every finding checked by hand</li>
+          <li>Top 10 fixes ranked by risk and effort, with code-level guidance</li>
+          <li>A one-page summary for your customer's security reviewer</li>
+        </ul>
+        <p class="meta">One agent, one repo · 5 business days</p>
+      </div>
+      <div class="tier full">
+        <h3>Full Review</h3>
+        <div class="price">$3,000<small>fixed</small></div>
+        <ul>
+          <li>Everything in the Scorecard Review</li>
+          <li>Threat model: what the agent can touch and who can steer it</li>
+          <li>Data-flow review of secrets, customer data and untrusted input</li>
+          <li>Prompt-injection walkthrough against your real tools</li>
+          <li>60-minute call with your team, and a re-score within 30 days</li>
+        </ul>
+        <p class="meta">One agent with its tools, MCP servers and deploy config · 5 business days</p>
+      </div>
+    </div>
+    <div class="terms">
+      <p><b>Code only, no production access</b>Read access to the repo or a tarball. Nothing is run against your systems.</p>
+      <p><b>Half up front, half on delivery</b>If the report doesn't give you five fixes worth making, you don't pay the second half.</p>
+      <p><b>Your code stays yours</b>Reviewed privately, deleted 30 days after delivery, NDA on request.</p>
+    </div>
+    <div class="book" id="book">
+      <p>Send a line about your agent and what it can do. You'll hear back within one business day with a fit check and a start date.</p>
+      <a class="btn primary" href="BOOKING_LINK">Book a review</a>
+    </div>
+  </section>
+
+  <footer>
+    <span><a href="https://github.com/sagacioussid02/agent-scorecard">agent-scorecard</a> · MIT licensed · built by Sidd</span>
+    <span>Static analysis shows a control is present, not that it works.</span>
+  </footer>
+</div>
+
+<script>
+const data = [
+  ["sagacioussid02/sutra", "My voice gateway to my agents", 90, "A", [77, 100, 83, 88, 86, 100, 100], "none"],
+  ["OpenHands/software-agent-sdk", "Open-source coding agent core", 89, "A", [96, 65, 83, 94, 100, 100, 86], "none"],
+  ["sagacioussid02/minions", "My AI engineering org", 77, "C*", [54, 100, 92, 62, 100, 57, 71], "TB-02, UI-01"],
+  ["browser-use/browser-use", "Browser automation agent", 76, "C*", [73, 45, 67, 88, 86, 100, 71], "TB-02"],
+  ["langchain-ai/open_deep_research", "Research agent", 51, "D", [33, 45, 17, 62, 79, 64, 57], "TB-02"],
+  ["sagacioussid02/qxplore", "My quantum simulator with an AI assistant", 42, "D", [50, null, 25, 75, 50, 40, 14], "UI-01"],
+  ["sagacioussid02/personas", "My AI persona platform", 37, "F", [19, 25, 50, 75, 29, 43, 21], "TB-02, AG-03, BL-01, UI-01"],
+];
+const heat = v => v === null ? "na" : v >= 90 ? "h4" : v >= 75 ? "h3" : v >= 55 ? "h2" : v >= 35 ? "h1" : "h0";
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+document.getElementById("rows").innerHTML = data.map(([repo, what, score, grade, layers, crit]) =>
+  `<tr><td class="repo">${esc(repo)}<small>${esc(what)}</small></td><td class="s">${score}</td><td class="g">${esc(grade)}</td>` +
+  layers.map(v => `<td class="cell"><span class="${heat(v)}">${v === null ? "–" : v}</span></td>`).join("") +
+  `<td class="crit">${esc(crit)}</td></tr>`).join("");
+</script>
+</body>
+</html>

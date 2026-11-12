@@ -1,0 +1,205 @@
+"""Render scorecards (Markdown, JSON) and the rubric (Markdown)."""
+
+from __future__ import annotations
+
+import json
+from datetime import date
+
+from .checks import REGISTRY
+from .model import CheckResult, Layer, Scorecard, Status
+
+STATUS_LABEL = {
+    Status.PASS: "PASS",
+    Status.PARTIAL: "PARTIAL",
+    Status.MISSING: "MISSING",
+    Status.NOT_APPLICABLE: "N/A",
+}
+
+
+def _bar(score: float | None, width: int = 10) -> str:
+    if score is None:
+        return "n/a"
+    filled = round(score / 100 * width)
+    return "█" * filled + "░" * (width - filled)
+
+
+def _cell(text: str) -> str:
+    return text.replace("|", "\\|").replace("\n", " ")
+
+
+def _code(text: str) -> str:
+    return "`" + text.replace("`", "'") + "`"
+
+
+def to_markdown(card: Scorecard, *, evidence: bool = True, today: date | None = None) -> str:
+    today = today or date.today()
+    lines: list[str] = []
+    commit = f" @ `{card.commit}`" if card.commit else ""
+    lines += [
+        f"# Agent Safety Scorecard: {card.target}",
+        "",
+        f"**Score: {card.overall:.0f}/100 · Grade {card.grade}**"
+        + (" (capped at C by a missing critical control)" if card.grade_capped else ""),
+        "",
+        f"Scanned{commit} on {today.isoformat()} with agent-scorecard {card.scanner_version} · "
+        f"{card.files_scanned} files · Frameworks: {', '.join(card.frameworks) or 'none detected'}",
+        "",
+        "## Layers",
+        "",
+        "| # | Layer | Score | |",
+        "|---|---|---:|---|",
+    ]
+    for ls in card.layers:
+        score = "n/a" if ls.score is None else f"{ls.score:.0f}"
+        lines.append(f"| {ls.layer.number} | {ls.layer.title} | {score} | {_bar(ls.score)} |")
+    lines.append("")
+
+    if card.critical_gaps:
+        lines += ["## Critical gaps", ""]
+        for r in card.critical_gaps:
+            lines.append(f"- **{r.spec.id} {r.spec.title}.** {r.summary} Fix: {r.spec.fix}")
+        lines.append("")
+
+    fixes = _top_fixes(card)
+    if fixes:
+        lines += ["## Top fixes", ""]
+        for i, r in enumerate(fixes, 1):
+            lines.append(f"{i}. **{r.spec.id} {r.spec.title}** ({r.spec.severity.value}): {r.spec.fix}")
+        lines.append("")
+
+    lines += ["## Checks", "", "| ID | Check | Severity | Result | Finding |", "|---|---|---|---|---|"]
+    for r in card.results:
+        lines.append(f"| {r.spec.id} | {_cell(r.spec.title)} | {r.spec.severity.value} | "
+                     f"{STATUS_LABEL[r.status]} | {_cell(r.summary)} |")
+    lines.append("")
+
+    if evidence:
+        lines += ["## Evidence", ""]
+        for r in card.results:
+            if not r.evidence:
+                continue
+            lines.append(f"**{r.spec.id} {r.spec.title}**")
+            lines.append("")
+            for e in r.evidence:
+                mark = "anti-pattern · " if e.negative else ""
+                lines.append(f"- {mark}`{e.location()}` {_code(e.snippet)}")
+            lines.append("")
+
+    lines += [
+        "---",
+        "",
+        "This is a static scan: it reads code and config and never runs them. It finds the "
+        "presence of controls, not proof that they work. A PASS means the signal is there; a "
+        "MISSING can be a control the scanner doesn't recognise yet. RUBRIC.md explains every "
+        "check and how it is scored.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _top_fixes(card: Scorecard, n: int = 5) -> list[CheckResult]:
+    rank = {Status.MISSING: 0, Status.PARTIAL: 1}
+    todo = [r for r in card.results if r.status in rank]
+    todo.sort(key=lambda r: (-r.spec.severity.weight * (2 - (r.status.points or 0)), rank[r.status], r.spec.id))
+    return todo[:n]
+
+
+def to_dict(card: Scorecard) -> dict:
+    return {
+        "target": card.target,
+        "commit": card.commit,
+        "scanner_version": card.scanner_version,
+        "frameworks": list(card.frameworks),
+        "files_scanned": card.files_scanned,
+        "score": card.overall,
+        "grade": card.grade,
+        "grade_capped": card.grade_capped,
+        "layers": [
+            {"layer": ls.layer.value, "title": ls.layer.title, "score": ls.score} for ls in card.layers
+        ],
+        "checks": [
+            {
+                "id": r.spec.id,
+                "layer": r.spec.layer.value,
+                "title": r.spec.title,
+                "severity": r.spec.severity.value,
+                "status": r.status.value,
+                "summary": r.summary,
+                "evidence": [
+                    {"path": e.path, "line": e.line, "snippet": e.snippet, "anti_pattern": e.negative}
+                    for e in r.evidence
+                ],
+            }
+            for r in card.results
+        ],
+        "critical_gaps": [r.spec.id for r in card.critical_gaps],
+    }
+
+
+def to_json(card: Scorecard) -> str:
+    return json.dumps(to_dict(card), indent=2)
+
+
+def rubric_markdown() -> str:
+    checks = REGISTRY.ordered()
+    lines = [
+        "# Agent Safety Rubric",
+        "",
+        "<!-- Generated by `agent-scorecard rubric`. Edit the checks in src/agent_scorecard/checks, not this file. -->",
+        "",
+        f"{len(checks)} checks across 7 layers. Each one is something you can see in a codebase, "
+        "and each one closes a way that production agents actually fail.",
+        "",
+        "## How scoring works",
+        "",
+        "- Each check is **PASS** (2 points), **PARTIAL** (1) or **MISSING** (0). "
+        "**N/A** checks are left out: sandboxing in an agent that never runs commands, file confinement "
+        "where nothing writes files, and the tool and approval checks (TB-01, TB-02, AG-01 to AG-04, "
+        "UI-03) and the step cap (BL-01) in a chat-only app that never calls tools.",
+        "- Points are weighted by severity: critical ×3, high ×2, medium ×1.",
+        "- A layer's score is its weighted points over the maximum possible, as a percentage.",
+        "- The overall score is the plain average of the layer scores. Defence in depth means a "
+        "perfect layer can't make up for a missing one.",
+        "- Grades: A ≥ 85, B ≥ 70, C ≥ 55, D ≥ 40, otherwise F.",
+        "- **Any missing critical check caps the grade at C**, whatever the number says.",
+        "",
+        "## At a glance",
+        "",
+        "| ID | Layer | Check | Severity |",
+        "|---|---|---|---|",
+    ]
+    for c in checks:
+        s = c.spec
+        lines.append(f"| {s.id} | {s.layer.title} | {s.title} | {s.severity.value} |")
+    lines.append("")
+    for layer in Layer:
+        lines += [f"## {layer.number}. {layer.title}", ""]
+        for c in checks:
+            s = c.spec
+            if s.layer != layer:
+                continue
+            lines += [
+                f"### {s.id} {s.title} ({s.severity.value})",
+                "",
+                f"**Why it matters.** {s.why}",
+                "",
+                f"**What the scanner looks for.** {s.look_for}",
+                "",
+                f"- **Pass:** {s.full_credit}",
+                f"- **Partial:** {s.partial_credit}",
+                "- **Missing:** none of the above.",
+                "",
+                f"**Fix.** {s.fix}",
+                "",
+            ]
+    return "\n".join(lines)
+
+
+def explain(check_id: str) -> str | None:
+    c = REGISTRY.get(check_id)
+    if c is None:
+        return None
+    s = c.spec
+    return (f"{s.id} {s.title} ({s.layer.title}, {s.severity.value})\n\n"
+            f"Why it matters: {s.why}\n\nWhat the scanner looks for: {s.look_for}\n\n"
+            f"Pass: {s.full_credit}\nPartial: {s.partial_credit}\n\nFix: {s.fix}\n")

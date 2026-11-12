@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install pytest
+      - run: python -m pytest
+      - name: RUBRIC.md is up to date
+        run: |
+          PYTHONPATH=src python -m agent_scorecard rubric --out /tmp/RUBRIC.md
+          diff -u RUBRIC.md /tmp/RUBRIC.md
+      - name: Score this repo
+        if: matrix.python-version == '3.13'
+        run: |
+          PYTHONPATH=src python -m agent_scorecard scan . --no-evidence --out scorecard.md || true
+          cat scorecard.md >> "$GITHUB_STEP_SUMMARY"

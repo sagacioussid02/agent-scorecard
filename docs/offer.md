@@ -50,4 +50,4 @@ I'm Sidd, a senior engineer who builds production agent systems. I wrote `agent-
 - If the report doesn't give you at least five fixes worth making, you don't pay the second half.
 - Your code stays private: reviewed on my machine, deleted 30 days after delivery, never used to train anything.
 
-**To book:** [BOOKING_LINK](BOOKING_LINK)
+**To book:** [siddharthuncc@gmail.com](mailto:siddharthuncc@gmail.com?subject=Agent%20Safety%20Review)

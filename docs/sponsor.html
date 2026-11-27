@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sponsor agent-scorecard</title>
+<meta name="description" content="Rates for the one monthly sponsor slot on the agent-scorecard site: who sees it, what you get and the price.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@112,600;112,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: an inspection report. Wide hero with a live scorecard, then a ruled ledger of layers, real results, and a two-column offer. */
+:root {
+  --paper: #f3f5f6;
+  --sheet: #ffffff;
+  --ink: #16202b;
+  --ink-2: #4a5866;
+  --rule: #d5dce1;
+  --signal: #e2591b;      /* hazard orange: the one accent */
+  --signal-soft: #fbe3d6;
+  --pass: #2f7d5b;
+  --partial: #b7861a;
+  --missing: #c23b2f;
+  --bar-bg: #e4e9ec;
+  --display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --s-1: 0.8125rem; --s0: 1rem; --s1: 1.25rem; --s2: 1.75rem; --s3: 2.5rem; --s4: clamp(2.4rem, 5.4vw, 4.1rem);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #0f151b; --sheet: #161e26; --ink: #e6ebef; --ink-2: #9aa8b4; --rule: #2a3540;
+    --signal: #ff7a3d; --signal-soft: #3a2116; --pass: #5cc195; --partial: #e3b44a; --missing: #f0675a; --bar-bg: #24303a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #0f151b; --sheet: #161e26; --ink: #e6ebef; --ink-2: #9aa8b4; --rule: #2a3540;
+  --signal: #ff7a3d; --signal-soft: #3a2116; --pass: #5cc195; --partial: #e3b44a; --missing: #f0675a; --bar-bg: #24303a;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink);
+  font: 400 var(--s0)/1.6 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 1120px; margin: 0 auto; }
+a { color: inherit; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; }
+h1, h2, h3 { font-family: var(--display); font-stretch: 112%; font-weight: 800; letter-spacing: -0.01em; text-wrap: balance; margin: 0; }
+p { margin: 0; }
+.eyebrow { font: 500 var(--s-1)/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+code, .mono { font-family: var(--mono); font-size: 0.92em; }
+
+/* Masthead */
+.mast { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-block: 22px; border-bottom: 1px solid var(--rule); flex-wrap: wrap; }
+.brand { font: 600 var(--s0)/1 var(--mono); display: flex; align-items: center; gap: 10px; }
+.brand i { width: 14px; height: 14px; background: repeating-linear-gradient(-45deg, var(--signal) 0 4px, var(--ink) 4px 8px); display: inline-block; }
+.mast nav { display: flex; gap: 22px; font-size: var(--s-1); flex-wrap: wrap; }
+.mast nav a { text-decoration: none; color: var(--ink-2); }
+.mast nav a:hover { color: var(--ink); }
+
+.btn { display: inline-block; padding: 12px 18px; font: 600 0.95rem/1 var(--body); text-decoration: none; border: 1.5px solid var(--ink); border-radius: 3px; }
+.btn.primary { background: var(--signal); border-color: var(--signal); color: #fff; }
+.btn:hover { transform: translateY(-1px); }
+
+.intro { padding-block: 56px 40px; max-width: 760px; }
+.intro h1 { font-size: var(--s4); line-height: 1.02; margin-top: 14px; }
+.intro p.lede { margin-top: 20px; font-size: var(--s1); line-height: 1.5; color: var(--ink-2); }
+section.block { padding-block: 48px; border-top: 1px solid var(--rule); }
+section.block h2 { font-size: var(--s2); line-height: 1.1; margin-bottom: 20px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+.stats div { border-top: 2px solid var(--ink); padding-top: 12px; }
+.stats b { display: block; font: 800 var(--s3)/1 var(--display); font-stretch: 112%; font-variant-numeric: tabular-nums; }
+.stats span { color: var(--ink-2); font-size: 0.95rem; }
+.note { margin-top: 16px; font-size: var(--s-1); color: var(--ink-2); max-width: 70ch; }
+.gets { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; max-width: 70ch; }
+.gets li { padding-left: 22px; position: relative; }
+.gets li::before { content: ""; position: absolute; left: 0; top: 0.7em; width: 10px; height: 2px; background: var(--signal); }
+.preview { margin-top: 22px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; padding: 14px 16px; border: 1px dashed var(--rule); border-radius: 6px; background: var(--sheet); font-size: 0.92rem; max-width: 760px; }
+.preview .who b { font-weight: 600; }
+.preview .who span { color: var(--ink-2); }
+.offer { display: flex; gap: 24px; align-items: center; flex-wrap: wrap; padding: 28px; background: var(--sheet); border: 2px solid var(--ink); border-radius: 6px; max-width: 760px; }
+.offer .price { font: 800 var(--s3)/1 var(--display); font-stretch: 112%; font-variant-numeric: tabular-nums; }
+.offer .price small { font: 400 var(--s-1)/1 var(--body); color: var(--ink-2); margin-left: 6px; }
+.offer p { flex: 1 1 260px; color: var(--ink-2); }
+.rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; font-size: 0.95rem; color: var(--ink-2); }
+.rules b { color: var(--ink); display: block; margin-bottom: 4px; }
+footer { padding-block: 36px 48px; border-top: 1px solid var(--rule); font-size: var(--s-1); color: var(--ink-2); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <a class="brand" href="./" style="text-decoration:none"><i aria-hidden="true"></i>agent-scorecard</a>
+    <nav aria-label="Sections">
+      <a href="#audience">Audience</a>
+      <a href="#gets">What you get</a>
+      <a href="#price">Price</a>
+      <a href="https://github.com/sagacioussid02/agent-scorecard">GitHub</a>
+    </nav>
+  </header>
+
+  <section class="intro">
+    <p class="eyebrow">Sponsor slot</p>
+    <h1>One sponsor a month, in front of people building agents</h1>
+    <p class="lede">agent-scorecard is an open-source scanner that scores how safely an AI agent codebase is built. Its site has room for exactly one "Presented by" sponsor, shown under the scored repos for a calendar month.</p>
+  </section>
+
+  <section class="block" id="audience">
+    <h2>Who sees it</h2>
+    <p class="note" style="margin:0 0 22px;font-size:0.95rem">Engineers and tech leads shipping agents on the Claude Agent SDK, LangGraph, CrewAI, the OpenAI Agents SDK and MCP, who care enough about safety to scan their own code.</p>
+    <div class="stats" id="stats"></div>
+    <p class="note" id="stats-note">These are real numbers, not projections. The project is new, so the price is set for where it is today.</p>
+  </section>
+
+  <section class="block" id="gets">
+    <h2>What you get</h2>
+    <ul class="gets">
+      <li>Your name, logo, a one-line tagline and a link in the "Presented by" slot on the main page, under the seven scored agent repos.</li>
+      <li>The only sponsor on the site for the whole calendar month. No rotation, no banner grid.</li>
+      <li>A link tagged with your UTM parameters, so you can count the visits in your own analytics.</li>
+      <li>It's labelled as a sponsor and marked <code>rel="sponsored"</code>, as search engines ask.</li>
+    </ul>
+    <div class="preview" aria-label="Example of the slot">
+      <span class="eyebrow">Presented by</span>
+      <span class="who"><b>Your tool</b> <span>Your one-line tagline, up to 120 characters.</span></span>
+    </div>
+  </section>
+
+  <section class="block" id="price">
+    <h2>Price</h2>
+    <div class="offer">
+      <div class="price" id="price-num">$49<small>per month</small></div>
+      <p>One calendar month, paid up front. Tell me the month you want and send your logo, tagline and link.</p>
+      <a class="btn primary" id="book" href="mailto:siddharthuncc@gmail.com?subject=Sponsor%20slot%20on%20agent-scorecard">Book the slot</a>
+    </div>
+    <div class="rules" style="margin-top:26px">
+      <p><b>Tools that fit</b>Dev tools, infrastructure and services that agent builders would actually use. Every sponsor is approved before it goes up.</p>
+      <p><b>No tracking</b>Just a link and a logo. No scripts, pixels or cookies from sponsors on the page.</p>
+      <p><b>Not an endorsement</b>Sponsors don't change any score, and the scanner itself never shows ads.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span><a href="./">agent-scorecard</a> · MIT licensed · built by Sidd</span>
+    <span id="asof"></span>
+  </footer>
+</div>
+
+<script src="sponsor.js"></script>
+<script>
+(() => {
+  const cfg = window.SPONSOR_CONFIG || {};
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const stats = document.getElementById("stats");
+  if (stats && Array.isArray(cfg.stats)) {
+    stats.innerHTML = cfg.stats.map((s) => `<div><b>${esc(s.value)}</b><span>${esc(s.label)}</span></div>`).join("");
+  }
+  if (cfg.statsAsOf) document.getElementById("asof").textContent = "Audience numbers as of " + cfg.statsAsOf;
+  if (typeof cfg.price === "number") {
+    const sym = cfg.currency === "USD" || !cfg.currency ? "$" : cfg.currency + " ";
+    document.getElementById("price-num").innerHTML = esc(sym + cfg.price.toLocaleString("en-US")) + "<small>per month</small>";
+  }
+  const book = document.getElementById("book");
+  if (book && window.sponsorCheckout) {
+    const c = window.sponsorCheckout(cfg);
+    book.href = c.href;
+    if (c.external) { book.target = "_blank"; book.rel = "noopener"; }
+  }
+})();
+</script>
+</body>
+</html>

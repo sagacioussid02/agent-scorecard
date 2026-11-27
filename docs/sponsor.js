@@ -25,7 +25,7 @@ window.SPONSOR_CONFIG = {
   price: 49,
   currency: "USD",
   // Gumroad product link once it exists. Empty means "Book the slot" opens an email.
-  checkoutUrl: "",
+  checkoutUrl: "https://binosus.gumroad.com/l/sponsor",
   bookEmail: "siddharthuncc@gmail.com",
 
   // Audience numbers shown on the rate page. Update before pitching a sponsor.

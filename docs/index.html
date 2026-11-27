@@ -163,6 +163,16 @@ td.crit { font: 400 0.78rem/1.4 var(--mono); color: var(--signal); }
 .book p { flex: 1 1 320px; }
 .book .btn { border-color: var(--signal); }
 
+/* Sponsor slot: one "Presented by" line under the scored repos, clearly labelled */
+.sponsor { margin-top: 22px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; padding: 14px 16px; border: 1px dashed var(--rule); border-radius: 6px; font-size: 0.92rem; }
+.sponsor .eyebrow { flex: 0 0 auto; }
+.sponsor .who { display: flex; gap: 12px; align-items: center; flex: 1 1 280px; min-width: 0; }
+.sponsor img { width: 32px; height: 32px; object-fit: contain; border-radius: 4px; background: var(--sheet); flex: 0 0 auto; }
+.sponsor a.name { font-weight: 600; text-decoration-color: var(--signal); text-underline-offset: 3px; }
+.sponsor .tag { color: var(--ink-2); }
+.sponsor .more { font-size: var(--s-1); color: var(--ink-2); }
+.sponsor.open { border-style: dashed; color: var(--ink-2); }
+
 footer { padding-block: 36px 48px; border-top: 1px solid var(--rule); font-size: var(--s-1); color: var(--ink-2); display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 
 @media (max-width: 860px) {
@@ -257,6 +267,11 @@ footer { padding-block: 36px 48px; border-top: 1px solid var(--rule); font-size:
       </table>
     </div>
     <p class="table-note">Scored on 9 November 2026 with agent-scorecard 0.1.0. A grade with * is capped at C by a missing critical control; a dash means the layer doesn't apply because the app never calls tools. These are static signals, not a penetration test.</p>
+    <aside class="sponsor open" id="sponsor" aria-label="Sponsor">
+      <span class="eyebrow">Presented by</span>
+      <span class="who">This slot is open: one dev tool for agent builders, one month at a time.</span>
+      <a class="more" href="sponsor.html">Sponsor this page</a>
+    </aside>
   </section>
 
   <section class="block" id="scoring">
@@ -314,7 +329,7 @@ footer { padding-block: 36px 48px; border-top: 1px solid var(--rule); font-size:
 
   <footer>
     <span><a href="https://github.com/sagacioussid02/agent-scorecard">agent-scorecard</a> · MIT licensed · built by Sidd</span>
-    <span>Static analysis shows a control is present, not that it works.</span>
+    <span>Static analysis shows a control is present, not that it works. · <a href="sponsor.html">Sponsor</a></span>
   </footer>
 </div>
 
@@ -334,6 +349,22 @@ document.getElementById("rows").innerHTML = data.map(([repo, what, score, grade,
   `<tr><td class="repo">${esc(repo)}<small>${esc(what)}</small></td><td class="s">${score}</td><td class="g">${esc(grade)}</td>` +
   layers.map(v => `<td class="cell"><span class="${heat(v)}">${v === null ? "–" : v}</span></td>`).join("") +
   `<td class="crit">${esc(crit)}</td></tr>`).join("");
+</script>
+<script src="sponsor.js"></script>
+<script>
+(() => {
+  const s = window.activeSponsor && window.activeSponsor(window.SPONSOR_CONFIG);
+  const el = document.getElementById("sponsor");
+  if (!s || !el) return;
+  el.classList.remove("open");
+  el.innerHTML = '<span class="eyebrow">Presented by</span><span class="who"></span><a class="more" href="sponsor.html">Sponsor</a>';
+  const who = el.querySelector(".who");
+  if (s.logo) { const img = new Image(); img.src = s.logo; img.alt = ""; img.width = 32; img.height = 32; img.loading = "lazy"; img.referrerPolicy = "no-referrer"; who.append(img); }
+  const a = document.createElement("a");
+  a.className = "name"; a.href = s.url; a.rel = "sponsored noopener"; a.target = "_blank"; a.textContent = s.name;
+  who.append(a);
+  if (s.tagline) { const t = document.createElement("span"); t.className = "tag"; t.textContent = s.tagline; who.append(" ", t); }
+})();
 </script>
 </body>
 </html>
